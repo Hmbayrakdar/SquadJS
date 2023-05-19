@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 
 import axios from 'axios';
 import Logger from 'core/logger';
+import ftp from 'basic-ftp';
 
 const __dirname = fileURLToPath(import.meta.url);
 
@@ -29,6 +30,34 @@ export default async function fetchAdminLists(adminLists) {
           const listPath = path.resolve(__dirname, '../../../', list.source);
           if (!fs.existsSync(listPath)) throw new Error(`Could not find Admin List at ${listPath}`);
           data = fs.readFileSync(listPath, 'utf8');
+          break;
+        }
+        case 'ftp': {
+          const client = new ftp.Client()
+
+          try {
+            await client.access({
+              host: list.host,
+              port: list.port,
+              user: list.user,
+              password: list.password,
+              secure: false
+            })
+
+            // download the file located in remotePath
+            // to localFile
+            await client.downloadTo("Admins.cfg", list.adminsCfgDir);
+          } catch (e) {
+            console.log(e)
+          }
+
+          // close the client connection
+          await client.close();
+
+          const listPath = path.resolve(__dirname, '../../../', "Admins.cfg");
+          if (!fs.existsSync(listPath)) throw new Error(`Could not find Admin List at ${listPath}`);
+          data = fs.readFileSync(listPath, 'utf8');
+
           break;
         }
         default:
